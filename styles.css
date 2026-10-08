@@ -1,0 +1,1546 @@
+/* ==========================================================
+   Reysourcez Enterprise — shared stylesheet
+   Every page (index.html, about.html, services.html,
+   contact.html) links to this one file. Change a color here
+   once and it updates everywhere — that's the whole point of
+   keeping CSS in its own file instead of repeating it on
+   every page.
+   ========================================================== */
+
+/* ---- 1. Design tokens ----
+   These custom properties are the site's whole "look" in one
+   place. Try changing --accent below to any hex code and
+   reload a page — everything that uses it updates at once. */
+:root {
+  --ink: #16261F;          /* headings, nav text, footer background */
+  --text: #1C2B24;         /* body copy */
+  --muted: #5C6D64;        /* secondary / quieter text */
+  --paper: #EEF0EA;        /* page background */
+  --surface: #FFFFFF;      /* card backgrounds */
+  --accent: #1F6F5C;       /* signature teal — links, buttons, icons */
+  --accent-dark: #195A4A;  /* accent, darkened for hover states */
+  --accent-soft: #DCEAE4;  /* pale tint of accent, for soft blocks */
+  --line: #D8DCD3;         /* hairline borders/dividers */
+
+  /* Overlay tool themes (Costing Analysis's inline overlay) — same
+     saturation/depth register as --accent, different hue per tool,
+     so the overlay reads as clearly not-the-main-page. Overhead's
+     blue is the same one already used for it in the cost-structure
+     bars, reused rather than duplicated. */
+  --menu-accent: #96731A;
+  --menu-accent-soft: #F3E7CC;
+  --overhead-accent: #2E5FA3;
+  --overhead-accent-soft: #DCE6F2;
+  --printing-accent: #AD5A3E;
+  --printing-accent-soft: #F2E1D9;
+
+  /* Cost-structure comparison (the pie charts on Costing Analysis) —
+     Ingredients reuses --accent above since that's already the
+     site's signature color; these three are new so the same hex
+     doesn't need retyping across the several rules that use them. */
+  --seg-overhead: #2E5FA3;
+  --seg-manpower: #D4A017;
+  --seg-margin: #C2588A;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --max-width: 1080px;
+}
+
+/* ---- 1b. Alternate theme demo ("Ocean") ----
+   Proves the palette really is a one-block swap: add
+   data-theme="ocean" to any page's <html> tag and every rule that
+   reads --ink/--text/--accent/etc. above updates immediately, with
+   zero changes anywhere else in this file or in any page's own
+   markup. See THEME_GUIDE.md for the full token reference, a second
+   ready-made palette, and how this could become a single site-wide
+   switch (via site-config.js's theme field) instead of a manual
+   per-page attribute, if that's wanted later. Only the core palette
+   shifts here — the per-tool overlay accents (--menu-accent and
+   friends, section 15) and the cost-structure segment colors stay
+   put on purpose, since they're meant to read as distinct FROM the
+   main accent regardless of which theme is active. */
+[data-theme="ocean"] {
+  --ink: #16212B;
+  --text: #1C2733;
+  --muted: #5C6B78;
+  --paper: #EAF0F2;
+  --accent: #1B5A8A;
+  --accent-dark: #164A70;
+  --accent-soft: #D9E7EF;
+  --line: #D3DCE1;
+}
+
+/* ---- 2. Reset-ish basics ---- */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-y: scroll; /* prevents layout shift when scrollbar appears/disappears */
+}
+img { max-width: 100%; display: block; }
+a { color: var(--accent); }
+h1, h2, h3 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  line-height: 1.15;
+  margin: 0 0 0.5em;
+}
+p { margin: 0 0 1em; }
+
+/* keyboard users need to see where focus is */
+a:focus-visible, button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* respect people who've asked their OS for less motion */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--ink);
+  color: #fff;
+  padding: 12px 20px;
+  z-index: 100;
+  text-decoration: none;
+}
+.skip-link:focus { left: 12px; top: 12px; }
+
+.wrap {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.mark { color: var(--accent); } /* SVG icons use stroke="currentColor", so this one line colors all of them */
+
+/* Screen-reader-only text (table captions, icon-only button labels).
+   Referenced across every calculator page but never defined here
+   until now — those elements were visible to everyone, not just
+   screen readers. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- 3. Header / nav ---- */
+.site-header {
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 24px;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.nav-links {
+  display: flex;
+  gap: 28px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+.nav-links a {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+}
+.nav-links a:hover,
+.nav-links a[aria-current="page"] {
+  border-bottom-color: var(--accent);
+}
+
+/* ---- Nav dropdown ("Business Analysis" menu) ---- */
+.nav-dropdown { position: relative; }
+.nav-dropdown-toggle {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0 0 4px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.nav-dropdown-toggle:hover,
+.nav-dropdown-toggle.active,
+.nav-dropdown.is-open .nav-dropdown-toggle {
+  border-bottom-color: var(--accent);
+}
+.nav-dropdown-caret {
+  width: 6px; height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  margin-top: -3px;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.nav-dropdown:hover .nav-dropdown-caret,
+.nav-dropdown.is-open .nav-dropdown-caret {
+  transform: rotate(-135deg);
+  margin-top: 3px;
+}
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin: 10px 0 0;
+  padding: 8px;
+  min-width: 210px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+  display: none;
+  z-index: 20;
+}
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown.is-open .nav-dropdown-menu {
+  display: block;
+}
+.nav-dropdown-menu li { margin: 0; }
+.nav-dropdown-menu a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-bottom: none;
+}
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu a[aria-current="page"] {
+  background: var(--paper);
+  color: var(--accent-dark);
+}
+
+/* ---- 4. Buttons ---- */
+.btn {
+  display: inline-block;
+  padding: 13px 26px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 2px solid transparent;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+.btn-secondary { border-color: var(--ink); color: var(--ink); }
+.btn-secondary:hover { background: var(--ink); color: #fff; }
+
+/* ---- 5. Hero (homepage top section) ---- */
+.hero { padding: 88px 0 0; }
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 48px;
+  align-items: center;
+}
+.eyebrow {
+  display: inline-block;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.hero h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); max-width: 14ch; }
+.hero .lead { font-size: 1.15rem; color: var(--muted); max-width: 48ch; margin-bottom: 28px; }
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.hero-mark { display: flex; align-items: center; justify-content: center; }
+
+/* value props row under the hero */
+.values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding: 48px 0 80px;
+  border-top: 1px solid var(--line);
+  margin-top: 48px;
+}
+.value .mark { width: 36px; height: 36px; margin-bottom: 14px; }
+.value h3 { font-size: 1.05rem; margin-bottom: 6px; }
+.value p { color: var(--muted); font-size: 0.95rem; margin: 0; }
+
+/* ---- 6. Generic content sections (reused on every page) ---- */
+.section { padding: 72px 0; }
+.section-head { max-width: 60ch; margin-bottom: 44px; }
+.section-head h2 { font-size: clamp(1.8rem, 3.4vw, 2.4rem); }
+.section-head p { color: var(--muted); font-size: 1.05rem; }
+.section-alt { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+.about-teaser { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.about-teaser p { color: var(--muted); font-size: 1.05rem; }
+
+/* the soft rounded block that stands in for a photo until you add one */
+.portrait {
+  aspect-ratio: 4 / 5;
+  border-radius: 8px;
+  background: linear-gradient(150deg, var(--accent-soft), var(--paper) 65%);
+  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+.portrait::after {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.15;
+}
+.portrait-wide { aspect-ratio: 16 / 10; }
+
+/* ---- 7. Cards / services grid ---- */
+.card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 30px; }
+.card .mark { width: 34px; height: 34px; margin-bottom: 16px; }
+.card h3 { font-size: 1.2rem; margin-bottom: 8px; }
+.card p { color: var(--muted); margin-bottom: 14px; }
+.card .price { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+
+/* ---- 8. About page ---- */
+.about-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 48px; align-items: start; }
+.about-grid figure { margin: 0; }
+.about-grid h2 { font-size: 1.3rem; margin-top: 28px; }
+.about-grid figcaption { margin-top: 12px; font-size: 0.9rem; color: var(--muted); }
+.values-list { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 14px; }
+.values-list li { padding-left: 24px; position: relative; color: var(--muted); }
+.values-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ---- 9. Contact page ---- */
+.contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.contact-item { display: flex; gap: 16px; align-items: flex-start; padding: 20px 0; border-bottom: 1px solid var(--line); }
+.contact-item .mark { width: 24px; height: 24px; flex-shrink: 0; margin-top: 2px; }
+.contact-item h3 {
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: var(--font-body);
+}
+.contact-item p, .contact-item a { font-size: 1.05rem; color: var(--ink); text-decoration: none; margin: 0; }
+.contact-item a:hover { color: var(--accent); }
+.contact-note { background: var(--accent-soft); border-radius: 8px; padding: 28px; }
+.contact-note h3 { margin-bottom: 10px; }
+.contact-note p { color: var(--ink); }
+
+/* ---- 10. Bottom call-to-action band ---- */
+.cta-band { background: var(--ink); color: #fff; padding: 64px 0; text-align: center; }
+.cta-band h2 { color: #fff; font-size: clamp(1.6rem, 3vw, 2.2rem); }
+.cta-band p { color: #C9D2CC; max-width: 50ch; margin: 0 auto 28px; }
+
+/* ---- 11. Footer ---- */
+.site-footer { background: var(--ink); color: #C9D2CC; padding: 56px 0 32px; }
+.footer-grid { display: none; }
+.footer-brand { display: none; }
+.footer-tagline { display: none; }
+.footer-links { display: none; }
+.footer-col { display: none; }
+.footer-col h4 { display: none; }
+.footer-col ul { display: none; }
+.footer-col a { display: none; }
+.footer-col a:hover { display: none; }
+.footer-bottom { padding: 24px 0; font-size: 0.85rem; color: #8B978F; text-align: center; }
+
+/* ---- 12. Small screens ----
+   Below 800px we stack the two-column layouts into one
+   column and center the nav links so nothing overlaps. */
+@media (max-width: 800px) {
+  .hero-grid, .about-grid, .contact-grid, .about-teaser { grid-template-columns: 1fr; }
+  .hero-mark { order: -1; max-width: 220px; margin: 0 auto; }
+  .card-grid { grid-template-columns: 1fr; }
+  .values { grid-template-columns: 1fr; gap: 32px; }
+  .nav { justify-content: center; text-align: center; }
+  .nav-links { justify-content: center; width: 100%; }
+  .nav-dropdown { width: 100%; }
+  .nav-dropdown-toggle { justify-content: center; width: 100%; }
+  .nav-dropdown-menu { position: static; width: 100%; margin-top: 4px; box-shadow: none; border: none; }
+}
+
+/* ---- 13. Menu calculator ----
+   New page, so these are new rules — everything above this
+   point is untouched. Calculated (read-only) columns use
+   --accent-soft as a background so it's obvious at a glance
+   which cells you type into and which update on their own. */
+
+.calc-intro { padding: 56px 0 32px; }
+.calc-intro-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+.calc-intro-header > div { flex: 1; }
+.calc-intro-header .btn { white-space: nowrap; flex-shrink: 0; }
+.calc-intro h1 { font-size: clamp(1.8rem, 3.6vw, 2.6rem); max-width: 20ch; }
+.calc-intro .lead { font-size: 1.1rem; color: var(--muted); max-width: 65ch; margin: 0; }
+
+.calc-panel { padding: 8px 0 16px; }
+.calc-panel h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 16px; }
+
+.inflation-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--paper);
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+.inflation-control label { font-weight: 600; color: var(--text); }
+.inflation-control input {
+  width: 70px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+}
+.inflation-control input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+#calc-table { border-collapse: collapse; width: 100%; min-width: 860px; }
+#calc-table th, #calc-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+#calc-table thead th {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--paper);
+  white-space: nowrap;
+}
+
+/* Sortable headers — used by both the ingredient table and every
+   menu block's table below. */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+th.sortable:hover { color: var(--accent-dark); }
+.sort-indicator {
+  display: inline-block;
+  width: 0.8em;
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+#calc-table th.auto-col, #calc-table td.calc {
+  background: var(--accent-soft);
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+}
+#calc-table td.calc { font-weight: 600; color: var(--accent-dark); }
+
+#calc-table td input, #calc-table td select {
+  width: 100%;
+  min-width: 84px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+}
+#calc-table td input[type="text"] { font-family: var(--font-body); min-width: 150px; }
+#calc-table input:focus-visible, #calc-table select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.delete-row {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--accent-dark);
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+.delete-row:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+.delete-row:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+.calc-actions { display: flex; gap: 14px; padding: 18px 0 8px; flex-wrap: wrap; }
+.header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-self: flex-start; }
+.calc-actions .btn { cursor: pointer; font-family: var(--font-body); }
+.calc-actions .btn-secondary { background: transparent; }
+
+/* ---- Menu/Job block tabs ----
+   Shared by Menu Portion Creator and Print Job Creator (both build
+   .menu-block instances the identical way — see printing-calculator's
+   own comments on why). Sits inside .calc-actions, beside the "+ Add"
+   button, so tabs queue horizontally as more blocks are added. Reuses
+   .btn/.btn-secondary as the base pill look — same family as the
+   "Pull from" connector buttons on Costing Analysis — rather than an
+   underlined tab strip, so only the active-state override is new. */
+.menu-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.menu-tab-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ---- Cost-mode tabs (Manual > Detailed/Simple, AI estimate) ----
+   Same .btn/.btn-secondary + .is-active pattern as .menu-tab-btn just
+   above, one level deeper: the outer Manual/AI estimate pair picks
+   which .cost-mode-panel shows, and — only while Manual is active —
+   the inner Detailed/Simple pair picks which .manual-sub-panel shows.
+   See menu-calculator.js's setCostTab/setManualSub. Manual's sub-tabs
+   get the darker accent-dark shade so the two levels stay visually
+   distinct even though both use the same tab mechanic. */
+.cost-mode-tabs { display: flex; gap: 8px; margin: 16px 0 12px; }
+.cost-mode-tab.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.manual-mode-box { border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.manual-mode-label { font-family: var(--font-display); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 10px; }
+.manual-sub-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.manual-sub-tab.is-active { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+
+.menu-ai-description { width: 100%; font-family: var(--font-body); resize: vertical; margin: 8px 0 12px; }
+.ai-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.menu-ai-photo-name { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
+.menu-ai-status { font-size: 0.85rem; color: var(--accent-dark); margin: 6px 0 0; }
+.menu-ai-status.is-error { color: #C0392B; }
+.menu-ai-table { width: 100%; margin-top: 12px; border-collapse: collapse; }
+.menu-ai-table th, .menu-ai-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); font-family: var(--font-body); }
+.menu-ai-table th:last-child, .menu-ai-table td:last-child { text-align: right; }
+
+.calc-note { padding: 32px 0 72px; }
+.calc-note p { color: var(--muted); font-size: 0.95rem; max-width: 75ch; margin: 0 0 10px; }
+.calc-note p:last-child { margin-bottom: 0; }
+.calc-note strong { color: var(--ink); }
+
+@media (max-width: 800px) {
+  .calc-intro .lead { max-width: none; }
+  .calc-intro-header { flex-direction: column; align-items: stretch; }
+  .calc-intro-header .btn { align-self: flex-start; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .table-scroll { border: none; }
+  #calc-table, .menu-table { min-width: 0; }
+  #calc-table th.auto-col, #calc-table td.calc,
+  .menu-table th.auto-col, .menu-table td.calc { background: #f2f2f2; }
+  #calc-table td input, #calc-table td select,
+  .menu-table td input, .menu-table td select {
+    border: none;
+    padding: 2px 4px;
+    background: transparent;
+  }
+}
+
+/* ---- 14. Menu portion creator ----
+   Reads live from the ingredient table above via each row's
+   data-row-id / data-true-cost / data-base-unit attributes —
+   nothing here is a second source of truth for cost data.
+   Everything below is class-based (not ID-based) because a page
+   can hold any number of .menu-block instances. */
+
+.menu-builder { padding: 40px 0 72px; border-top: 1px solid var(--line); }
+.menu-builder h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 8px; }
+.menu-builder-intro { color: var(--muted); max-width: 68ch; margin: 0 0 20px; }
+
+.menu-block {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 24px;
+  margin-bottom: 28px;
+}
+
+.menu-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.menu-name-input {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.6vw, 1.7rem);
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed var(--line);
+  padding: 6px 2px;
+  flex: 1 1 260px;
+  max-width: 480px;
+}
+.menu-name-input:hover, .menu-name-input:focus-visible {
+  border-bottom-color: var(--accent);
+  outline: none;
+}
+
+.remove-block-btn {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.remove-block-btn:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+.remove-block-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+.menu-table { border-collapse: collapse; width: 100%; min-width: 680px; }
+.menu-table th, .menu-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+.menu-table thead th {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--paper);
+  white-space: nowrap;
+}
+.menu-table th.auto-col, .menu-table td.calc {
+  background: var(--accent-soft);
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+}
+.menu-table td.calc { font-weight: 600; color: var(--accent-dark); }
+
+.menu-table td select, .menu-table td input[type="number"] {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+}
+.menu-table td select { min-width: 130px; }
+.menu-table td input[type="number"] { width: 90px; }
+.menu-table td input[type="text"] {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+}
+.menu-table input:focus-visible, .menu-table select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.amount-cell { display: flex; align-items: center; gap: 7px; }
+.m-unit-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.m-include { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+
+.menu-table tbody tr.excluded { opacity: 0.5; }
+.menu-table tbody tr.excluded .m-price { text-decoration: line-through; }
+
+.menu-total-row td { border-bottom: none; border-top: 2px solid var(--ink); font-size: 1rem; }
+.menu-total-row strong { font-family: var(--font-display); }
+.menu-total-target-price { line-height: 1.5; }
+.menu-total-target-price strong { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; font-family: var(--font-body); color: var(--muted); }
+
+.fee-warning {
+  background: #F7E6E2;
+  color: #C0392B;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 10px 0;
+}
+
+.info-note {
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border-left: 3px solid var(--accent);
+  margin: 10px 0 20px;
+}
+.info-note strong { color: var(--text); }
+
+/* ---- Pricing panel: target food cost, selling price, platform/tax ---- */
+
+.pricing-panel { margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--line); }
+
+.pricing-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+}
+.pricing-row label { font-weight: 600; color: var(--text); }
+.pricing-row input[type="number"] {
+  width: 70px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+}
+.pricing-result {
+  margin-left: auto;
+  color: var(--muted);
+}
+.pricing-result strong {
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--accent-dark);
+  font-size: 1.05rem;
+  margin-left: 6px;
+}
+
+.platform-panel { margin-top: 16px; }
+
+/* Cost Buffer % row (2026-09-16) — sits above Target Food Cost % in
+   the pricing panel, its own thin divider to match .pricing-panel's
+   own top border above. See COST_BUFFER_STANDARD.md. */
+.cost-buffer-row { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--line); }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.toggle-row input[type="checkbox"] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--accent); }
+.toggle-hint { font-weight: 400; color: var(--muted); }
+
+/* .cost-buffer-fields joins this group as of 2026-09-16 — Menu
+   Calculator's dish-level Cost Buffer % toggle reuses this exact
+   layout (flex row, muted label, mono input) rather than inventing
+   new rules. See COST_BUFFER_STANDARD.md. */
+.platform-fields, .sst-fields, .cost-buffer-fields {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 4px 0 12px 25px;
+  font-size: 0.88rem;
+}
+.platform-fields[hidden], .sst-fields[hidden], .cost-buffer-fields[hidden] { display: none; }
+.platform-fields label, .sst-fields label, .cost-buffer-fields label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.platform-fields input, .sst-fields input, .cost-buffer-fields input {
+  width: 60px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+}
+
+.net-summary {
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 8px;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 0.88rem;
+  display: grid;
+  gap: 6px;
+}
+.net-summary div { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+.net-received {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 8px;
+  color: var(--ink) !important;
+  font-size: 1rem;
+}
+
+@media (max-width: 800px) {
+  .pricing-result { margin-left: 0; }
+  .platform-fields, .sst-fields { padding-left: 0; }
+}
+
+@media print {
+  .menu-name-input { border-bottom: none; padding: 0; }
+  .menu-block { border: 1px solid #ccc; break-inside: avoid; }
+  .net-summary { background: #f4f4f4; }
+}
+/* ---- 15. Interactive Costing Analysis ----
+   New page: wizard + break-even calculator. Reuses existing
+   tokens (--ink, --accent, --paper, etc.) and existing patterns
+   (.btn, .toggle-hint, .calc-actions) rather than introducing a
+   second design language. */
+
+.ica-panel { padding: 24px 0 40px; }
+
+/* Wizard */
+.wizard-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 32px;
+  max-width: 560px;
+  margin: 0 auto 16px;
+  text-align: center;
+}
+.wizard-progress {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+.wizard-card h3 {
+  font-size: clamp(1.2rem, 2.6vw, 1.5rem);
+  margin: 0 0 20px;
+}
+.wizard-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.wizard-option {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 12px 20px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--text);
+  cursor: pointer;
+}
+.wizard-option:hover { border-color: var(--accent); color: var(--accent-dark); }
+.wizard-option:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#wizard-back { display: block; margin: 0 auto; }
+
+/* Top bar with edit answers + save PDF */
+.analysis-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* Tip banner + edit-answers link */
+.ica-tip {
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 0.92rem;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 20px;
+}
+.link-btn:hover { text-decoration: underline; }
+
+/* Connector panel — buttons that open the linked tools */
+.connector-panel {
+  background: var(--accent-soft);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+.connector-panel .calc-actions { margin: 0; align-items: center; }
+.connector-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 2px;
+}
+
+.connector-btn.is-active { background: var(--ink); color: #fff; }
+.connector-btn-menu:hover, .connector-btn-menu.is-active { border-color: var(--menu-accent); color: var(--menu-accent); }
+.connector-btn-menu.is-active { background: var(--menu-accent); color: #fff; }
+.connector-btn-overhead:hover, .connector-btn-overhead.is-active { border-color: var(--overhead-accent); color: var(--overhead-accent); }
+.connector-btn-overhead.is-active { background: var(--overhead-accent); color: #fff; }
+.connector-btn-printing:hover, .connector-btn-printing.is-active { border-color: var(--printing-accent); color: var(--printing-accent); }
+.connector-btn-printing.is-active { background: var(--printing-accent); color: #fff; }
+
+/* ---- Tool dock ----
+   Loads another tool's real page inline (see rzLoadToolIntoDock in
+   the JS) instead of opening it in a new tab. Sits in the normal
+   page flow after Cost Structure, so opening it only pushes the
+   footer down — replaces the old fixed/backdrop modal overlay this
+   site briefly tried (GitHub Pages blocks iframing outright, so
+   that approach never worked at all); the header/title/close-button
+   treatment and per-tool theme colors below are carried over from
+   that attempt since the LOOK was fine, only the mechanism wasn't. */
+.tool-dock {
+  margin-top: 40px;
+  border-radius: 14px;
+  border-top: 6px solid var(--accent);
+  background: var(--surface);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  scroll-margin-top: 90px; /* clears the sticky header when scrolled into view */
+}
+
+.full-summary-section {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px dashed var(--line);
+}
+.full-summary-section h2 { margin-bottom: 18px; }
+.summary-item {
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.summary-item h3 { margin: 0 0 4px; font-size: 1rem; }
+.summary-formula { margin: 0 0 6px; font-size: 0.82rem; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+.summary-value { margin: 0; font-weight: 600; color: var(--accent-dark); font-size: 1.05rem; }
+.summary-value.is-warning { color: #C0392B; }
+ul.summary-value { list-style: none; padding: 0; font-weight: 400; font-size: 0.9rem; color: var(--text); }
+ul.summary-value li { padding: 3px 0; }
+ul.summary-value li.is-warning { color: #C0392B; font-weight: 600; }
+.tool-dock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--accent-soft);
+  border-radius: 8px 8px 0 0;
+}
+.tool-dock-title { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; color: var(--ink); }
+.tool-dock-close {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 2px 10px;
+  border-radius: 6px;
+}
+.tool-dock-close:hover { background: rgba(0,0,0,0.08); }
+.tool-dock-close:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.tool-dock-body { padding: 8px 20px 24px; }
+.tool-dock-status { color: var(--muted); text-align: center; padding: 40px 20px; }
+.tool-dock-status.is-error { color: #C0392B; }
+
+.tool-dock.theme-menu { border-top-color: var(--menu-accent); }
+.tool-dock.theme-menu .tool-dock-header { background: var(--menu-accent-soft); }
+.tool-dock.theme-overhead { border-top-color: var(--overhead-accent); }
+.tool-dock.theme-overhead .tool-dock-header { background: var(--overhead-accent-soft); }
+.tool-dock.theme-printing { border-top-color: var(--printing-accent); }
+.tool-dock.theme-printing .tool-dock-header { background: var(--printing-accent-soft); }
+
+@media print {
+  .tool-dock { display: none !important; }
+}
+
+/* ---- "Back to analysis" floating button ----
+   Appears only while the tool dock above is open. Deliberately
+   simple compared to the old floating switcher this replaced —
+   one button, one action (scroll up), no channel/permissions/other-
+   tabs tracking to go wrong. */
+#rz-back-to-top {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+#rz-back-to-top:hover { background: var(--accent-dark); }
+#rz-back-to-top:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+@media print { #rz-back-to-top { display: none !important; } }
+
+/* Inputs + results grid */
+.ica-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(240px, 1fr);
+  gap: 32px;
+  margin-bottom: 32px;
+}
+.ica-inputs h3 {
+  font-size: 1rem;
+  margin: 24px 0 12px;
+}
+.ica-inputs h3:first-child { margin-top: 0; }
+.ica-inputs label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.ica-inputs label .label-text { flex: 1; }
+.ica-inputs input[type="number"] {
+  width: 100px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+  text-align: right;
+}
+.ica-inputs input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+.slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.slider-row label { flex: 0 0 auto; font-size: 0.88rem; color: var(--muted); min-width: 150px; }
+.slider-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+.slider-num {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.88rem;
+  color: var(--text);
+  min-width: 56px;
+  width: 56px;
+  text-align: right;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.slider-num:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+.preset-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.preset-buttons .btn { font-size: 0.85rem; padding: 8px 14px; }
+
+.ica-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-content: start;
+}
+.result-card {
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.result-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+.result-value { font-family: "IBM Plex Mono", monospace; font-size: 1.2rem; font-weight: 600; color: var(--accent-dark); }
+.result-card.is-loss { background: #f7e6e2; }
+.result-card.is-loss .result-value { color: var(--accent); }
+
+/* Chart */
+.ica-chart-wrap { margin-bottom: 36px; }
+#ica-chart {
+  width: 100%;
+  height: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.chart-grid { stroke: var(--line); stroke-width: 1; }
+.chart-axis-line { stroke: var(--ink); stroke-width: 1.5; }
+.chart-axis-label { font-size: 10px; fill: var(--muted); font-family: "IBM Plex Mono", monospace; }
+.chart-axis-title { font-size: 11px; fill: var(--muted); font-family: var(--font-body); }
+.chart-line { fill: none; stroke-width: 2.5; }
+.chart-line-revenue { stroke: #5388CF; }
+.chart-line-cost { stroke: var(--accent); }
+.chart-line-fixed { stroke: #D4A017; stroke-dasharray: 5 4; }
+.chart-be-line, .chart-current-line { stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.chart-point-be { fill: #C0392B; stroke: #fff; stroke-width: 1.5; }
+.chart-point-current { fill: #D68ABA; stroke: #fff; stroke-width: 1.5; }
+.chart-point-label { font-size: 10px; fill: var(--ink); font-weight: 600; font-family: var(--font-body); }
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 4px 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.chart-legend span { display: flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.legend-revenue { background: #5388CF; }
+.legend-cost { background: var(--accent); }
+.legend-fixed { background: #D4A017; }
+.legend-be { background: #C0392B; border-radius: 50%; width: 8px; height: 8px; }
+.legend-current { background: #D68ABA; border-radius: 50%; width: 8px; height: 8px; }
+
+/* Cost structure comparison */
+.ica-structure { margin-top: 8px; }
+.structure-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.ica-structure h3 { font-size: 1.1rem; margin: 0; }
+
+.structure-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 8px 0 12px;
+  align-items: center;
+}
+.structure-key span { display: flex; align-items: center; gap: 6px; }
+.structure-key .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+.legend-ingredients { background: var(--accent); }
+.legend-overhead { background: var(--seg-overhead); }
+.legend-manpower { background: var(--seg-manpower); }
+.legend-margin { background: var(--seg-margin); }
+
+.structure-note { font-size: 0.82rem; color: var(--muted); margin: 0 0 18px; max-width: 65ch; }
+
+.loss-flag { color: #C0392B; font-weight: 700; font-size: 0.78rem; text-transform: uppercase; margin-left: 4px; }
+
+/* .structure-bar / .seg / .seg-label directly below are ALSO reused
+   as-is by food-worth-calculator.html's own macro-nutrient bar
+   (#fw-macro-bar) — don't rename or remove these three, even though
+   the cost-structure comparison itself no longer renders as a bar
+   (see the pie layout further down instead). Only the colour-specific
+   .seg-ingredients / .seg-overhead / .seg-manpower / .seg-margin are
+   unique to this page, and now also feed the pie slices below via
+   `fill` alongside their original `background`. */
+.structure-bar {
+  flex: 0 1 300px;
+  min-width: 0;
+  display: flex;
+  height: 26px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--paper);
+}
+.seg { display: flex; align-items: center; justify-content: center; height: 100%; overflow: hidden; }
+.seg-ingredients { background: var(--accent); fill: var(--accent); }
+.seg-overhead { background: var(--seg-overhead); fill: var(--seg-overhead); }
+.seg-manpower { background: var(--seg-manpower); fill: var(--seg-manpower); }
+.seg-margin { background: var(--seg-margin); fill: var(--seg-margin); }
+
+/* Solid white label — simpler than the outline trick, works fine
+   since all four segment colors are dark/saturated enough. */
+.seg-label {
+  color: #FFFFFF;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+/* ---- Cost structure: pie layout ----
+   Two-column row: legend + note text on the left, the two
+   comparison pies on the right. "Your numbers" first, then the
+   Guide — whose dropdown IS that card's own header, so there's only
+   ever one control/label for it on the whole page. */
+.structure-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px;
+}
+.structure-info { flex: 1 1 260px; max-width: 380px; min-width: 0; }
+.structure-charts {
+  display: flex;
+  gap: 16px;
+  flex: 2 1 380px;
+  min-width: 0;
+}
+.structure-pie-card {
+  flex: 1 1 150px;
+  max-width: 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 14px;
+}
+.structure-pie-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  text-align: center;
+  min-height: 1.6em; /* keeps both pies aligned whether or not the loss flag is showing */
+}
+.structure-pie-title, .structure-pie-select {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.structure-pie-select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: var(--paper);
+  cursor: pointer;
+}
+.structure-pie-select:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+.structure-pie-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.structure-pie { width: 100%; max-width: 128px; height: auto; }
+.pie-seg { stroke: var(--surface); stroke-width: 1.5; transition: opacity 0.15s ease; }
+.pie-seg:hover { opacity: 0.85; }
+
+.structure-pie-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.structure-pie-legend li { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--muted); }
+.structure-pie-legend .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.structure-pie-legend strong { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--text); }
+.structure-pie-legend strong.is-negative { color: #C0392B; }
+
+@media (max-width: 800px) {
+  .ica-grid { grid-template-columns: 1fr; }
+  .ica-results { grid-template-columns: 1fr 1fr; }
+  .slider-row { flex-wrap: wrap; }
+  .slider-row label { min-width: 0; flex: 1 1 100%; }
+  .structure-layout { flex-direction: column; }
+  .structure-info { max-width: none; }
+  .structure-charts { gap: 10px; }
+  .structure-pie-card { padding: 14px 10px; }
+}
+
+@media print {
+  .wizard-card, #wizard-back { display: none; }
+  .link-btn { display: none; }
+  .ica-inputs input[type="range"] { display: none; }
+  #ica-chart { border: none; }
+}
+
+/* ---- 16. Overhead & Manpower Calculator ----
+   Reuses the existing #calc-table / .table-scroll / .calc /
+   .menu-total-row conventions from the ingredient and menu-portion
+   tables — new tables, same visual language. */
+
+#overhead-table, #manpower-table { border-collapse: collapse; width: 100%; min-width: 760px; }
+#overhead-table th, #overhead-table td,
+#manpower-table th, #manpower-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+  vertical-align: middle;
+}
+#overhead-table thead th, #manpower-table thead th {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--paper);
+  white-space: nowrap;
+}
+#overhead-table th.auto-col, #overhead-table td.calc,
+#manpower-table th.auto-col, #manpower-table td.calc {
+  background: var(--accent-soft);
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-weight: 600;
+  color: var(--accent-dark);
+}
+
+#overhead-table td input, #overhead-table td select,
+#manpower-table td input, #manpower-table td select {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+}
+#overhead-table td input[type="text"], #manpower-table td input[type="text"] {
+  font-family: var(--font-body);
+  min-width: 140px;
+}
+#overhead-table select, #manpower-table select { min-width: 120px; }
+#overhead-table input:focus-visible, #overhead-table select:focus-visible,
+#manpower-table input:focus-visible, #manpower-table select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.oh-amortize-cell { white-space: nowrap; font-size: 0.85rem; color: var(--muted); }
+.oh-amortize-cell input { width: 56px; margin: 0 4px; }
+.oh-amortize-empty, .mp-statutory-empty { color: var(--muted); font-family: var(--font-body); font-weight: 400; }
+
+.mp-statutory-cells { font-size: 0.78rem; line-height: 1.6; }
+.mp-statutory-cells div { display: flex; justify-content: space-between; gap: 10px; white-space: nowrap; }
+.mp-wage-warning {
+  font-size: 0.75rem;
+  color: #C0392B;
+  font-weight: 600;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.grand-total-card {
+  background: var(--paper);
+  border-radius: 10px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.grand-total-card .result-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+.grand-total-card .result-value { font-family: "IBM Plex Mono", monospace; font-size: 1.6rem; font-weight: 700; color: var(--accent-dark); }
+
+@media (max-width: 800px) {
+  .grand-total-card { flex-direction: column; align-items: flex-start; }
+}
+
+/* Live-synced field indicator, used on Cost Analysis */
+.synced-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* Measured-wastage suggestion pill (2026-09-22) — appears next to a
+   Wastage % input on Menu Calculator's Ingredient Costing table and
+   Printing Calculator's Material Costing table, whenever Cost
+   Structure Checker has a matching ingredient/material name. Same
+   accent-soft pill look as .synced-badge just above, since it's the
+   same idea (a value that came from another tool, not typed by
+   hand) applied to a table cell instead of a label. See
+   WASTAGE_SYNC_STANDARD.md. Printing Calculator currently also
+   carries a page-local copy of this rule from before this was added
+   here — same "define it locally until the shared file has it"
+   pattern this file's own .sr-only comment already documents; safe
+   to remove that local copy next time that page is touched, not
+   urgent since the two rules are identical.  */
+.wastage-suggest {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+  border: none;
+  padding: 2px 7px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wastage-suggest:hover { background: var(--accent); color: #fff; }
+.wastage-suggest:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+/* Dropdown that appears once Menu Calculator has synced more than
+   one menu item, letting this page price any one of them at a time
+   (bottom-up) — the full side-by-side comparison across all of them
+   lives on Margin Audit instead, see MULTI_MENU_SYNC_PLAN.md. */
+.synced-menu-picker { background: var(--accent-soft); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; }
+.synced-menu-picker select { max-width: 220px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; font-family: var(--font-body); background: var(--surface); }
+
+/* ---- Tooltips (question mark icon + hover text) ---- */
+.tooltip-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  padding-top: 2px;
+  cursor: help;
+  margin-left: 4px;
+  position: relative;
+}
+.tooltip-icon:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  white-space: normal;
+  width: max-content;
+  max-width: 240px;
+  text-align: left;
+  line-height: 1.4;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.tooltip-icon:hover::before {
+  content: "";
+  position: absolute;
+  bottom: 118%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--ink);
+  z-index: 1000;
+}
+
+/* For a tooltip-icon with no room above it (e.g. inside a table's
+   top row) — table-scroll's overflow-x:auto silently makes its
+   overflow-y "auto" too per the CSS spec, which clips anything that
+   pops up past its top edge. This variant opens downward instead. */
+.tooltip-icon.tooltip-below:hover::after {
+  bottom: auto;
+  top: 125%;
+}
+.tooltip-icon.tooltip-below:hover::before {
+  bottom: auto;
+  top: 118%;
+  border-top-color: transparent;
+  border-bottom-color: var(--ink);
+}
+
+/* Mobile: tooltips don't work, so hide the icon on small screens */
+@media (max-width: 600px) {
+  .tooltip-icon { display: none; }
+}
